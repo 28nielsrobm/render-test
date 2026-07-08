@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mini Rendering Engine</title>
+
+<style>
+    body {
+        margin: 0;
+        background: #202020;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+    }
+
+    canvas {
+        background: white;
+        border: 3px solid black;
+    }
+
+    #info{
+        position:absolute;
+        top:10px;
+        left:10px;
+        color:white;
+    }
+</style>
+</head>
+
+<body>
+
+<div id="info">
+    <div>Mini Rendering Engine</div>
+    <div>Move: WASD / Arrow Keys</div>
+    <div>Press G to Toggle Gravity</div>
+    <div id="gravityStatus">Gravity: OFF</div>
+</div>
+
+<canvas id="game" width="800" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+class Entity{
+
+    constructor(x, y, radius, color){
+
+        this.x = x;
+        this.y = y;
+
+        this.radius = radius;
+        this.scale = 1;
+
+        this.color = color;
+
+        this.vx = 0;
+        this.vy = 0;
+
+        this.onGround = false;
+        this.jumpCount = 0;
+        this.maxJumps = 2;
+        this.onLeftWall = false;
+        this.onRightWall = false;
+        this.onCeiling = false;
+        this.coyoteTimer = 0;
+
+        this.acceleration = 0.6;
+        this.friction = 0.90;
+        this.maxSpeed = 6;
+    }
+
+    draw(ctx){
+
+        ctx.beginPath();
+        ctx.arc(
+            this.x,
+            this.y,
+            this.radius * this.scale,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(
+            this.x,
+            this.y,
+            3 * this.scale,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+    }
+    update(){
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+    }
+
+}
+
+const player = new Entity(
+    400,
+    250,
+    20,
+    "dodgerblue"
+);
+
+const tree = new Entity(
+    250,
+    150,
+    25,
+    "forestgreen"
+);
+
+const coin = new Entity(
+    600,
+    320,
+    10,
+    "gold"
+);
+
+const entities = [
+    tree,
+    coin,
+    player
+];
+
+const keys = {};
+
+let jumpPressed = false;
+
+const world = {
+    floor: canvas.height - 40
+};
+
+const camera = {
+    x: 0,
+    y: 0,
+
+    smoothness: 0.10
+};
+
+let gravityEnabled = false;
+
+const physics = {
+    gravity: 0.25,
+    terminalVelocity: 12,
+
+    jumpPower: 8,
+    wallJumpPower: 8,
+    wallPushPower: 6,
+    wallSlideSpeed: 2
+};
+
+window.addEventListener("keydown", e => {
+
+    keys[e.key.toLowerCase()] = true;
+
+    if(e.key.toLowerCase() === "g"){
+
+        gravityEnabled = !gravityEnabled;
+
+        // Reset movement when switching modes
+        player.vx = 0;
+        player.vy = 0;
+        player.onGround = false;
+
+    }
+
+});
+
+window.addEventListener("keyup", e=>{
+    keys[e.key.toLowerCase()] = false;
+});
+
+function update(){
+
+    handleInput();
+    updatePhysics();
+    moveEntities();
+    resolveCollisions();
+    updateUI();
+
+}
+
+function handleInput(){
+
+    if(gravityEnabled){
+
+        if(keys["a"] || keys["arrowleft"])
+            player.vx -= player.acceleration;
+
+        if(keys["d"] || keys["arrowright"])
+            player.vx += player.acceleration;
+
+        const jumpNow =
+            (keys[" "] || keys["space"]);
+
+        if(jumpNow && !jumpPressed){
+
+            if(
+                player.jumpCount < player.maxJumps ||
+                player.coyoteTimer > 0
+            ){
+
+                player.vy = -physics.jumpPower;
+                player.jumpCount++;
+
+            }
+
+            else if(player.onLeftWall){
+
+                player.vx = physics.wallPushPower;
+                player.vy = -physics.wallJumpPower;
+
+                player.jumpCount = 1;
+
+            }
+
+            else if(player.onRightWall){
+
+                player.vx = -physics.wallPushPower;
+                player.vy = -physics.wallJumpPower;
+
+                player.jumpCount = 1;
+                }
+
+            else if(player.onCeiling){
+
+                player.vy = physics.jumpPower;
+
+            }
+
+        }
+
+        jumpPressed = jumpNow;
+
+    }else{
+
+        if(keys["w"] || keys["arrowup"])
+            player.vy -= player.acceleration;
+
+        if(keys["s"] || keys["arrowdown"])
+            player.vy += player.acceleration;
+
+        if(keys["a"] || keys["arrowleft"])
+            player.vx -= player.acceleration;
+
+        if(keys["d"] || keys["arrowright"])
+            player.vx += player.acceleration;
+
+    }
+
+}
+
+function updatePhysics(){
+
+    if(gravityEnabled){
+
+        player.vy += physics.gravity;
+
+        if(player.vy > physics.terminalVelocity){
+            player.vy = physics.terminalVelocity;
+        }
+
+        // Wall sliding
+        if(
+            !player.onGround &&
+            (player.onLeftWall || player.onRightWall) &&
+            player.vy > physics.wallSlideSpeed
+        ){
+
+            player.vy = physics.wallSlideSpeed;
+
+        }
+
+    }
+
+    player.vx = Math.max(
+        -player.maxSpeed,
+        Math.min(player.maxSpeed, player.vx)
+    );
+
+    if(!gravityEnabled){
+
+        player.vy = Math.max(
+            -player.maxSpeed,
+            Math.min(player.maxSpeed, player.vy)
+        );
+
+    }
+
+    if(player.onGround){
+
+        player.coyoteTimer = 8;
+
+    }else{
+
+        player.coyoteTimer--;
+
+    }
+
+}
+
+function moveEntities(){
+
+    for(const entity of entities){
+        entity.update();
+    }
+
+    player.vx *= player.friction;
+
+    if(!gravityEnabled){
+        player.vy *= player.friction;
+    }
+
+}
+
+function resolveCollisions(){
+
+    player.onGround = false;
+    player.onLeftWall = false;
+    player.onRightWall = false;
+    player.onCeiling = false;
+
+    // Left wall
+    if(player.x < player.radius){
+
+        player.x = player.radius;
+        player.vx = 0;
+        player.onLeftWall = true;
+
+    }
+
+    // Right wall
+    if(player.x > canvas.width-player.radius){
+
+        player.x = canvas.width-player.radius;
+        player.vx = 0;
+        player.onRightWall = true;
+
+    }
+
+    // Ceiling
+    if(player.y < player.radius){
+
+        player.y = player.radius;
+        player.vy = 0;
+        player.onCeiling = true;
+
+    }
+
+    if(gravityEnabled){
+
+        const bottom = player.radius * player.scale;
+
+        if(player.y > world.floor-bottom){
+
+            player.y = world.floor-bottom;
+            player.vy = 0;
+            player.onGround = true;
+            player.jumpCount = 0;
+
+        }
+
+    }
+
+}
+
+function updateUI(){
+
+    document.getElementById("gravityStatus").textContent =
+        "Gravity: " + (gravityEnabled ? "ON" : "OFF");
+
+}
+
+
+function render(){
+
+    clearScreen();
+    updatePerspective();
+    sortEntities();
+    drawEntities();
+    drawWorld();
+
+}
+
+function clearScreen(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+}
+
+function updatePerspective(){
+
+    for(const entity of entities){
+
+        entity.scale =
+            0.6 + (entity.y / canvas.height) * 0.6;
+
+    }
+
+}
+
+function sortEntities(){
+
+    entities.sort((a,b)=>a.y-b.y);
+
+}
+
+function drawEntities(){
+
+    for(const entity of entities){
+
+        entity.draw(ctx);
+
+    }
+
+}
+
+function drawWorld(){
+
+    if(!gravityEnabled)
+        return;
+
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(0,world.floor);
+    ctx.lineTo(canvas.width,world.floor);
+    ctx.stroke();
+
+}
+
+function gameLoop(){
+
+    update();
+    render();
+
+    requestAnimationFrame(gameLoop);
+
+}
+
+gameLoop();
+
+</script>
+</body>
+</html>
