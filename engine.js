@@ -1,0 +1,489 @@
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+class Entity{
+
+    constructor(x, y, radius, color){
+
+        this.x = x;
+        this.y = y;
+
+        this.radius = radius;
+        this.scale = 1;
+
+        this.color = color;
+
+        this.vx = 0;
+        this.vy = 0;
+
+        this.onGround = false;
+        this.jumpCount = 0;
+        this.maxJumps = 2;
+        this.onLeftWall = false;
+        this.onRightWall = false;
+        this.onCeiling = false;
+        this.coyoteTimer = 0;
+
+        this.acceleration = 0.6;
+        this.friction = 0.90;
+        this.maxSpeed = 6;
+    }
+
+    draw(ctx){
+
+        ctx.beginPath();
+        ctx.arc(
+            this.x,
+            this.y,
+            this.radius * this.scale,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(
+            this.x,
+            this.y,
+            3 * this.scale,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+    }
+
+    drawAtPosition(ctx, screenX, screenY){
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, this.radius * this.scale, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, 3 * this.scale, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+    }
+
+    update(){
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+    }
+
+}
+
+const player = new Entity(
+    300,
+    300,
+    20,
+    "dodgerblue"
+);
+
+const tree = new Entity(
+    800,
+    400,
+    25,
+    "forestgreen"
+);
+
+const coin = new Entity(
+    1200,
+    600,
+    10,
+    "gold"
+);
+
+const worldObjects = [];
+
+function initializeWorld() {
+    worldObjects.push(tree);
+    worldObjects.push(coin);
+    worldObjects.push(player); 
+}
+
+initializeWorld();
+    
+const keys = {};
+
+let jumpPressed = false;
+
+const world = {
+    width: 2000,
+    height: 1500,
+    floor: 1500 - 40,
+    wallThickness: 20
+};
+
+const camera = {
+    x: 0,
+    y: 0,
+    smoothness: 0.08,
+    width: canvas.width,
+    height: canvas.height
+};
+
+let gravityEnabled = false;
+
+const physics = {
+    gravity: 0.25,
+    terminalVelocity: 12,
+
+    jumpPower: 8,
+    wallJumpPower: 8,
+    wallPushPower: 6,
+    wallSlideSpeed: 2
+};
+
+window.addEventListener("keydown", e => {
+
+    keys[e.key.toLowerCase()] = true;
+
+    if(e.key.toLowerCase() === "g"){
+
+        gravityEnabled = !gravityEnabled;
+
+        // Reset movement when switching modes
+        player.vx = 0;
+        player.vy = 0;
+
+        player.onGround = false;
+        player.onLeftWall = false;
+        player.onRightWall = false;
+        player.onCeiling = false;
+
+        player.jumpCount = 0;
+        player.coyoteTimer = 0;
+    }
+
+});
+
+window.addEventListener("keyup", e=>{
+    keys[e.key.toLowerCase()] = false;
+});
+
+function update(){
+
+    handleInput();
+    updatePhysics();
+    moveEntities();
+    resolveCollisions();
+    updateCamera();
+    updateUI();
+
+}
+
+function handleInput(){
+
+    if(gravityEnabled){
+
+        if(keys["a"] || keys["arrowleft"])
+            player.vx -= player.acceleration;
+
+        if(keys["d"] || keys["arrowright"])
+            player.vx += player.acceleration;
+
+        const jumpNow =
+            (keys[" "] || keys["space"]);
+
+        if(jumpNow && !jumpPressed){
+
+            if(
+                player.jumpCount < player.maxJumps ||
+                player.coyoteTimer > 0
+            ){
+
+                player.vy = -physics.jumpPower;
+                player.jumpCount++;
+
+            }
+
+            else if(player.onLeftWall){
+
+                player.vx = physics.wallPushPower;
+                player.vy = -physics.wallJumpPower;
+
+                player.jumpCount = 1;
+
+            }
+
+            else if(player.onRightWall){
+
+                player.vx = -physics.wallPushPower;
+                player.vy = -physics.wallJumpPower;
+
+                player.jumpCount = 1;
+                }
+
+            else if(player.onCeiling){
+
+                player.vy = physics.jumpPower;
+
+            }
+
+        }
+
+        jumpPressed = jumpNow;
+
+    }else{
+
+        if(keys["w"] || keys["arrowup"])
+            player.vy -= player.acceleration;
+
+        if(keys["s"] || keys["arrowdown"])
+            player.vy += player.acceleration;
+
+        if(keys["a"] || keys["arrowleft"])
+            player.vx -= player.acceleration;
+
+        if(keys["d"] || keys["arrowright"])
+            player.vx += player.acceleration;
+
+    }
+
+}
+
+function updatePhysics(){
+
+    if(gravityEnabled){
+
+        player.vy += physics.gravity;
+
+        if(player.vy > physics.terminalVelocity){
+            player.vy = physics.terminalVelocity;
+        }
+
+        // Wall sliding
+        if(
+            !player.onGround &&
+            (player.onLeftWall || player.onRightWall) &&
+            player.vy > physics.wallSlideSpeed
+        ){
+
+            player.vy = physics.wallSlideSpeed;
+
+        }
+
+    }
+
+    player.vx = Math.max(
+        -player.maxSpeed,
+        Math.min(player.maxSpeed, player.vx)
+    );
+
+    if(!gravityEnabled){
+
+        player.vy = Math.max(
+            -player.maxSpeed,
+            Math.min(player.maxSpeed, player.vy)
+        );
+
+    }
+
+    if(player.onGround){
+
+        player.coyoteTimer = 8;
+
+    }else{
+
+        player.coyoteTimer--;
+
+    }
+
+}
+
+function moveEntities(){
+
+    for(const object of worldObjects){
+        entity.update();
+    }
+
+    player.vx *= player.friction;
+
+    if(!gravityEnabled){
+        player.vy *= player.friction;
+    }
+
+}
+
+function resolveCollisions(){
+
+    player.onGround = false;
+    player.onLeftWall = false;
+    player.onRightWall = false;
+    player.onCeiling = false;
+
+    // Left wall
+    if(player.x < player.radius + world.wallThickness){
+
+        player.x = player.radius + world.wallThickness;
+        player.vx = 0;
+        player.onLeftWall = true;
+
+    }
+
+    // Right wall
+    if(player.x > world.width - player.radius - world.wallThickness){
+
+        player.x = world.width - player.radius - world.wallThickness;
+        player.vx = 0;
+        player.onRightWall = true;
+
+    }
+
+    // Ceiling
+    if(player.y < player.radius + world.wallThickness){
+
+        player.y = player.radius + world.wallThickness;
+        player.vy = 0;
+        player.onCeiling = true;
+
+    }
+
+    if(gravityEnabled){
+
+        const bottom = player.radius * player.scale;
+
+        if(player.y > world.floor - bottom){
+
+            player.y = world.floor - bottom;
+            player.vy = 0;
+            player.onGround = true;
+            player.jumpCount = 0;
+
+        }
+
+    }
+
+}
+
+function updateCamera(){
+    const targetX = player.x - camera.width / 2;
+    const targetY = player.y - camera.height / 2;
+    
+    camera.x += (targetX - camera.x) * camera.smoothness;
+    camera.y += (targetY - camera.y) * camera.smoothness;
+    
+    // Clamp camera to world bounds
+    camera.x = Math.max(0, Math.min(camera.x, world.width - camera.width));
+    camera.y = Math.max(0, Math.min(camera.y, world.height - camera.height));
+}
+
+function updateUI(){
+
+    document.getElementById("gravityStatus").textContent =
+        "Gravity: " + (gravityEnabled ? "ON" : "OFF");
+
+}
+
+
+function render(){
+
+    clearScreen();
+    updatePerspective();
+    sortEntities();
+    drawEntities();
+    drawWorld();
+
+}
+
+function clearScreen(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+}
+
+function updatePerspective(){
+
+    for(const object of worldObjects){
+
+        entity.scale =
+            0.6 + (entity.y / world.height) * 0.6;
+
+    }
+
+}
+
+function sortEntities(){
+
+    worldObjects.sort((a,b)=>a.y-b.y);
+
+}
+
+function drawEntities(){
+
+    for(const object of worldObjects){
+
+        const screenX = object.x - camera.x;
+        const screenY = object.y - camera.y;
+        
+        // Only draw if on screen
+        if(screenX + object.radius > 0 && 
+           screenX - object.radius < canvas.width &&
+           screenY + object.radius > 0 && 
+           screenY - object.radius < canvas.height){
+            
+            object.drawAtPosition(ctx, screenX, screenY);
+        }
+
+    }
+
+}
+
+function drawWorld(){
+
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 3;
+    
+    // Draw floor
+    if(gravityEnabled){
+        const floorScreenY = world.floor - camera.y;
+        ctx.beginPath();
+        ctx.moveTo(0 - camera.x, floorScreenY);
+        ctx.lineTo(world.width - camera.x, floorScreenY);
+        ctx.stroke();
+    }
+    
+    // Draw world boundaries
+    ctx.strokeStyle = "darkred";
+    ctx.lineWidth = world.wallThickness;
+    
+    const walls = [
+        {x1: 0, y1: 0, x2: world.width, y2: 0}, // top
+        {x1: 0, y1: 0, x2: 0, y2: world.height}, // left
+        {x1: world.width, y1: 0, x2: world.width, y2: world.height}, // right
+        {x1: 0, y1: world.height, x2: world.width, y2: world.height} // bottom
+    ];
+    
+    for(const wall of walls){
+        ctx.beginPath();
+        ctx.moveTo(wall.x1 - camera.x, wall.y1 - camera.y);
+        ctx.lineTo(wall.x2 - camera.x, wall.y2 - camera.y);
+        ctx.stroke();
+    }
+
+}
+
+function gameLoop(){
+
+    update();
+    render();
+
+    requestAnimationFrame(gameLoop);
+
+}
+
+gameLoop();
+
+</script>
