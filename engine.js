@@ -300,7 +300,7 @@ function updatePhysics(){
 function moveEntities(){
 
     for(const object of worldObjects){
-        entity.update();
+        object.update();
     }
 
     player.vx *= player.friction;
@@ -407,8 +407,8 @@ function updatePerspective(){
 
     for(const object of worldObjects){
 
-        entity.scale =
-            0.6 + (entity.y / world.height) * 0.6;
+        object.scale =
+            0.6 + (object.y / world.height) * 0.6;
 
     }
 
