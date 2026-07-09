@@ -3,6 +3,22 @@ const ctx = canvas.getContext("2d");
 
 class Entity{
 
+    setSprite(src){
+
+        this.sprite = new Image();
+
+        this.sprite.onload = () => {
+            this.spriteLoaded = true;
+        };
+
+        this.sprite.onerror = () => {
+            console.warn("Couldn't load sprite:", src);
+        };
+
+        this.sprite.src = src;
+
+    }
+
     constructor(x, y, radius, color){
 
         this.x = x;
@@ -12,6 +28,9 @@ class Entity{
         this.scale = 1;
 
         this.color = color;
+
+        this.sprite = null;
+        this.spriteLoaded = false;
 
         this.vx = 0;
         this.vy = 0;
@@ -58,6 +77,21 @@ class Entity{
     }
 
     drawAtPosition(ctx, screenX, screenY){
+        if(this.spriteLoaded){
+
+            const size = this.radius * 2 * this.scale;
+
+            ctx.drawImage(
+                this.sprite,
+                screenX - size / 2,
+                screenY - size / 2,
+                size,
+                size
+            );
+
+            return;
+        }
+        
         ctx.beginPath();
         ctx.arc(screenX, screenY, this.radius * this.scale, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
