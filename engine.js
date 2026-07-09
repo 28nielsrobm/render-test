@@ -132,6 +132,7 @@ const coin = new Entity(
     10,
     "gold"
 );
+coin.setSprite("sprites/coin1.png");
 
 const worldObjects = [];
 
