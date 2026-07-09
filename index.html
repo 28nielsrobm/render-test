@@ -143,12 +143,16 @@ const coin = new Entity(
     "gold"
 );
 
-const entities = [
-    tree,
-    coin,
-    player
-];
+const worldObjects = [];
 
+function initializeWorld() {
+    worldObjects.push(tree);
+    worldObjects.push(coin);
+    worldObjects.push(player); 
+}
+
+initializeWorld();
+    
 const keys = {};
 
 let jumpPressed = false;
@@ -339,7 +343,7 @@ function updatePhysics(){
 
 function moveEntities(){
 
-    for(const entity of entities){
+    for(const object of worldObjects){
         entity.update();
     }
 
@@ -445,7 +449,7 @@ function clearScreen(){
 
 function updatePerspective(){
 
-    for(const entity of entities){
+    for(const object of worldObjects){
 
         entity.scale =
             0.6 + (entity.y / world.height) * 0.6;
@@ -456,24 +460,24 @@ function updatePerspective(){
 
 function sortEntities(){
 
-    entities.sort((a,b)=>a.y-b.y);
+    worldObjects.sort((a,b)=>a.y-b.y);
 
 }
 
 function drawEntities(){
 
-    for(const entity of entities){
+    for(const object of worldObjects){
 
-        const screenX = entity.x - camera.x;
-        const screenY = entity.y - camera.y;
+        const screenX = object.x - camera.x;
+        const screenY = object.y - camera.y;
         
         // Only draw if on screen
-        if(screenX + entity.radius > 0 && 
-           screenX - entity.radius < canvas.width &&
-           screenY + entity.radius > 0 && 
-           screenY - entity.radius < canvas.height){
+        if(screenX + object.radius > 0 && 
+           screenX - object.radius < canvas.width &&
+           screenY + object.radius > 0 && 
+           screenY - object.radius < canvas.height){
             
-            entity.drawAtPosition(ctx, screenX, screenY);
+            object.drawAtPosition(ctx, screenX, screenY);
         }
 
     }
