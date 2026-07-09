@@ -118,13 +118,15 @@ const player = new Entity(
     20,
     "dodgerblue"
 );
+player.setSprite("sprites/player1.png");
 
 const tree = new Entity(
     800,
     400,
-    25,
+    35,
     "forestgreen"
 );
+tree.setSprite("sprites/tree1.png");
 
 const coin = new Entity(
     1200,
