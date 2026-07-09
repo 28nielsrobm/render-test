@@ -1,47 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Mini Rendering Engine</title>
+    <meta charset="UTF-8">
+    <title>Mini Rendering Engine</title>
 
-<style>
-    body {
-        margin: 0;
-        background: #202020;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-    }
-
-    canvas {
-        background: white;
-        border: 3px solid black;
-    }
-
-    #info{
-        position:absolute;
-        top:10px;
-        left:10px;
-        color:white;
-    }
-</style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div id="info">
-    <div>Mini Rendering Engine</div>
-    <div>Move: WASD / Arrow Keys</div>
-    <div>Press G to Toggle Gravity</div>
-    <div id="gravityStatus">Gravity: OFF</div>
-</div>
+    <div id="info">
+        <div>Mini Rendering Engine</div>
+        <div>Move: WASD / Arrow Keys</div>
+        <div>Press G to Toggle Gravity</div>
+        <div id="gravityStatus">Gravity: OFF</div>
+    </div>
 
-<canvas id="game" width="800" height="500"></canvas>
+    <canvas id="game" width="800" height="500"></canvas>
 
-<script src="engine.js"></script>
+    <script src="engine.js"></script>
     
 </body>
 </html>
