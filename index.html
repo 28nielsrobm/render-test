@@ -191,8 +191,14 @@ window.addEventListener("keydown", e => {
         // Reset movement when switching modes
         player.vx = 0;
         player.vy = 0;
-        player.onGround = false;
 
+        player.onGround = false;
+        player.onLeftWall = false;
+        player.onRightWall = false;
+        player.onCeiling = false;
+
+        player.jumpCount = 0;
+        player.coyoteTimer = 0;
     }
 
 });
