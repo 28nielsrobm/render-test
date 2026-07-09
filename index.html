@@ -100,6 +100,19 @@ class Entity{
         ctx.fill();
 
     }
+
+    drawAtPosition(ctx, screenX, screenY){
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, this.radius * this.scale, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, 3 * this.scale, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+    }
+
     update(){
 
         this.x += this.vx;
@@ -110,22 +123,22 @@ class Entity{
 }
 
 const player = new Entity(
-    400,
-    250,
+    300,
+    300,
     20,
     "dodgerblue"
 );
 
 const tree = new Entity(
-    250,
-    150,
+    800,
+    400,
     25,
     "forestgreen"
 );
 
 const coin = new Entity(
+    1200,
     600,
-    320,
     10,
     "gold"
 );
@@ -141,14 +154,18 @@ const keys = {};
 let jumpPressed = false;
 
 const world = {
-    floor: canvas.height - 40
+    width: 2000,
+    height: 1500,
+    floor: 1500 - 40,
+    wallThickness: 20
 };
 
 const camera = {
     x: 0,
     y: 0,
-
-    smoothness: 0.10
+    smoothness: 0.08,
+    width: canvas.width,
+    height: canvas.height
 };
 
 let gravityEnabled = false;
@@ -190,6 +207,7 @@ function update(){
     updatePhysics();
     moveEntities();
     resolveCollisions();
+    updateCamera();
     updateUI();
 
 }
@@ -335,27 +353,27 @@ function resolveCollisions(){
     player.onCeiling = false;
 
     // Left wall
-    if(player.x < player.radius){
+    if(player.x < player.radius + world.wallThickness){
 
-        player.x = player.radius;
+        player.x = player.radius + world.wallThickness;
         player.vx = 0;
         player.onLeftWall = true;
 
     }
 
     // Right wall
-    if(player.x > canvas.width-player.radius){
+    if(player.x > world.width - player.radius - world.wallThickness){
 
-        player.x = canvas.width-player.radius;
+        player.x = world.width - player.radius - world.wallThickness;
         player.vx = 0;
         player.onRightWall = true;
 
     }
 
     // Ceiling
-    if(player.y < player.radius){
+    if(player.y < player.radius + world.wallThickness){
 
-        player.y = player.radius;
+        player.y = player.radius + world.wallThickness;
         player.vy = 0;
         player.onCeiling = true;
 
@@ -365,9 +383,9 @@ function resolveCollisions(){
 
         const bottom = player.radius * player.scale;
 
-        if(player.y > world.floor-bottom){
+        if(player.y > world.floor - bottom){
 
-            player.y = world.floor-bottom;
+            player.y = world.floor - bottom;
             player.vy = 0;
             player.onGround = true;
             player.jumpCount = 0;
@@ -376,6 +394,18 @@ function resolveCollisions(){
 
     }
 
+}
+
+function updateCamera(){
+    const targetX = player.x - camera.width / 2;
+    const targetY = player.y - camera.height / 2;
+    
+    camera.x += (targetX - camera.x) * camera.smoothness;
+    camera.y += (targetY - camera.y) * camera.smoothness;
+    
+    // Clamp camera to world bounds
+    camera.x = Math.max(0, Math.min(camera.x, world.width - camera.width));
+    camera.y = Math.max(0, Math.min(camera.y, world.height - camera.height));
 }
 
 function updateUI(){
@@ -412,7 +442,7 @@ function updatePerspective(){
     for(const entity of entities){
 
         entity.scale =
-            0.6 + (entity.y / canvas.height) * 0.6;
+            0.6 + (entity.y / world.height) * 0.6;
 
     }
 
@@ -428,7 +458,17 @@ function drawEntities(){
 
     for(const entity of entities){
 
-        entity.draw(ctx);
+        const screenX = entity.x - camera.x;
+        const screenY = entity.y - camera.y;
+        
+        // Only draw if on screen
+        if(screenX + entity.radius > 0 && 
+           screenX - entity.radius < canvas.width &&
+           screenY + entity.radius > 0 && 
+           screenY - entity.radius < canvas.height){
+            
+            entity.drawAtPosition(ctx, screenX, screenY);
+        }
 
     }
 
@@ -436,16 +476,35 @@ function drawEntities(){
 
 function drawWorld(){
 
-    if(!gravityEnabled)
-        return;
-
     ctx.strokeStyle = "black";
     ctx.lineWidth = 3;
-
-    ctx.beginPath();
-    ctx.moveTo(0,world.floor);
-    ctx.lineTo(canvas.width,world.floor);
-    ctx.stroke();
+    
+    // Draw floor
+    if(gravityEnabled){
+        const floorScreenY = world.floor - camera.y;
+        ctx.beginPath();
+        ctx.moveTo(0 - camera.x, floorScreenY);
+        ctx.lineTo(world.width - camera.x, floorScreenY);
+        ctx.stroke();
+    }
+    
+    // Draw world boundaries
+    ctx.strokeStyle = "darkred";
+    ctx.lineWidth = world.wallThickness;
+    
+    const walls = [
+        {x1: 0, y1: 0, x2: world.width, y2: 0}, // top
+        {x1: 0, y1: 0, x2: 0, y2: world.height}, // left
+        {x1: world.width, y1: 0, x2: world.width, y2: world.height}, // right
+        {x1: 0, y1: world.height, x2: world.width, y2: world.height} // bottom
+    ];
+    
+    for(const wall of walls){
+        ctx.beginPath();
+        ctx.moveTo(wall.x1 - camera.x, wall.y1 - camera.y);
+        ctx.lineTo(wall.x2 - camera.x, wall.y2 - camera.y);
+        ctx.stroke();
+    }
 
 }
 
