@@ -3,19 +3,27 @@ const ctx = canvas.getContext("2d");
 
 class Entity{
 
-    setSprite(src){
+    setSprite(image){
 
-        this.sprite = new Image();
+        if(image instanceof Image){
 
-        this.sprite.onload = () => {
-            this.spriteLoaded = true;
+            this.sprite.image = image;
+            this.sprite.loaded = true;
+            return;
+
+        }
+
+        this.sprite.image = new Image();
+
+        this.sprite.image.onload = () => {
+            this.sprite.loaded = true;
         };
 
-        this.sprite.onerror = () => {
-            console.warn("Couldn't load sprite:", src);
+        this.sprite.image.onerror = () => {
+            console.warn("Couldn't load sprite:", image);
         };
 
-        this.sprite.src = src;
+        this.sprite.image.src = image;
 
     }
 
@@ -26,12 +34,16 @@ class Entity{
 
         this.radius = radius;
         this.scale = 1;
+	this.width = radius * 2;
+	this.height = radius * 2;
+	this.rotation = 0;
 
         this.color = color;
 
-        this.sprite = null;
-        this.spriteLoaded = false;
-
+        this.sprite = {
+            image: null,
+	    loaded: false
+	};
         this.vx = 0;
         this.vy = 0;
 
@@ -77,16 +89,14 @@ class Entity{
     }
 
     drawAtPosition(ctx, screenX, screenY){
-        if(this.spriteLoaded){
+        if(this.sprite.loaded){
 
-            const size = this.radius * 2 * this.scale;
-
-            ctx.drawImage(
-                this.sprite,
-                screenX - size / 2,
-                screenY - size / 2,
-                size,
-                size
+	    ctx.drawImage(
+                this.sprite.image,
+                screenX - (this.width * this.scale) / 2,
+                screenY - (this.height * this.scale) / 2,
+                this.width * this.scale,
+                this.height * this.scale
             );
 
             return;
@@ -115,22 +125,22 @@ class Entity{
 const player = new Entity(
     300,
     300,
-    20,
+    45,
     "dodgerblue"
 );
 player.setSprite("sprites/player1.png");
 
 const tree = new Entity(
     800,
-    400,
-    35,
+    1390,
+    70,
     "forestgreen"
 );
 tree.setSprite("sprites/tree1.png");
 
 const coin = new Entity(
     1200,
-    600,
+    1400,
     10,
     "gold"
 );
