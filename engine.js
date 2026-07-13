@@ -34,16 +34,16 @@ class Entity{
 
         this.radius = radius;
         this.scale = 1;
-	this.width = radius * 2;
-	this.height = radius * 2;
-	this.rotation = 0;
+		this.width = radius * 2;
+		this.height = radius * 2;
+		this.rotation = 0;
 
         this.color = color;
 
         this.sprite = {
             image: null,
-	    loaded: false
-	};
+	  		loaded: false
+		};
         this.vx = 0;
         this.vy = 0;
 
