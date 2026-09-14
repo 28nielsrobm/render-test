@@ -1,13 +1,9 @@
-class Entity{
-
-    setSprite(image){
-
-        if(image instanceof Image){
-
+class Entity {
+    setSprite(image) {
+        if (image instanceof Image) {
             this.sprite.image = image;
             this.sprite.loaded = true;
             return;
-
         }
 
         this.sprite.image = new Image();
@@ -21,26 +17,25 @@ class Entity{
         };
 
         this.sprite.image.src = image;
-
     }
 
-    constructor(x, y, radius, color){
-
+    constructor(x, y, radius, color, acceleration = 0.6, friction = 0.90, maxSpeed = 6) {
         this.x = x;
         this.y = y;
 
         this.radius = radius;
         this.scale = 1;
-		this.width = radius * 2;
-		this.height = radius * 2;
-		this.rotation = 0;
+        this.width = radius * 2;
+        this.height = radius * 2;
+        this.rotation = 0;
 
         this.color = color;
 
         this.sprite = {
             image: null,
-	  		loaded: false
-		};
+            loaded: false
+        };
+        
         this.vx = 0;
         this.vy = 0;
 
@@ -52,13 +47,12 @@ class Entity{
         this.onCeiling = false;
         this.coyoteTimer = 0;
 
-        this.acceleration = 0.6;
-        this.friction = 0.90;
-        this.maxSpeed = 6;
+        this.acceleration = acceleration;
+        this.friction = friction;
+        this.maxSpeed = maxSpeed;
     }
 
-    draw(ctx){
-
+    draw(ctx) {
         ctx.beginPath();
         ctx.arc(
             this.x,
@@ -75,20 +69,18 @@ class Entity{
         ctx.arc(
             this.x,
             this.y,
-            3 * this.scale,
+            renderConfig.entityDebugDotRadius * this.scale,
             0,
             Math.PI * 2
         );
 
         ctx.fillStyle = "white";
         ctx.fill();
-
     }
 
-    drawAtPosition(ctx, screenX, screenY){
-        if(this.sprite.loaded){
-
-	    ctx.drawImage(
+    drawAtPosition(ctx, screenX, screenY) {
+        if (this.sprite.loaded) {
+            ctx.drawImage(
                 this.sprite.image,
                 screenX - (this.width * this.scale) / 2,
                 screenY - (this.height * this.scale) / 2,
@@ -98,23 +90,20 @@ class Entity{
 
             return;
         }
-        
+
         ctx.beginPath();
         ctx.arc(screenX, screenY, this.radius * this.scale, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
-        
+
         ctx.beginPath();
-        ctx.arc(screenX, screenY, 3 * this.scale, 0, Math.PI * 2);
+        ctx.arc(screenX, screenY, renderConfig.entityDebugDotRadius * this.scale, 0, Math.PI * 2);
         ctx.fillStyle = "white";
         ctx.fill();
     }
 
-    update(){
-
+    update() {
         this.x += this.vx;
         this.y += this.vy;
-
     }
-
 }

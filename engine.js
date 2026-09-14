@@ -5,69 +5,66 @@ const ctx = canvas.getContext("2d");
 camera.width = canvas.width;
 camera.height = canvas.height;
 
-const player = new Entity(
-    300,
-    300,
-    45,
-    "dodgerblue"
-);
-player.setSprite("sprites/player1.png");
+// Factory function to create entities from config
+function createEntityFromConfig(configKey) {
+    const config = entityConfig[configKey];
+    const entity = new Entity(
+        config.x,
+        config.y,
+        config.radius,
+        config.color,
+        config.acceleration || 0.6,
+        config.friction || 0.90,
+        config.maxSpeed || 6
+    );
+    
+    if (config.sprite) {
+        entity.setSprite(config.sprite);
+    }
+    
+    if (config.maxJumps) {
+        entity.maxJumps = config.maxJumps;
+    }
+    
+    return entity;
+}
 
-const tree = new Entity(
-    800,
-    1390,
-    70,
-    "forestgreen"
-);
-tree.setSprite("sprites/tree1.png");
-
-const coin = new Entity(
-    1200,
-    1400,
-    10,
-    "gold"
-);
-coin.setSprite("sprites/coin1.png");
+const player = createEntityFromConfig("player");
+const tree = createEntityFromConfig("tree");
+const coin = createEntityFromConfig("coin");
 
 const worldObjects = [];
 
 function initializeWorld() {
     worldObjects.push(tree);
     worldObjects.push(coin);
-    worldObjects.push(player); 
+    worldObjects.push(player);
 }
 
 initializeWorld();
 setupInputListeners(player);
 
-function update(){
-
+function update() {
     handleInput(player, physics, getGravityEnabled());
     updatePhysics(player, physics, getGravityEnabled());
     moveEntities(worldObjects, player);
     resolveCollisions(player, world, getGravityEnabled());
     updateCamera(player, camera, world);
     updateUI();
-
 }
 
-function render(){
-
+function render() {
     clearScreen(ctx, canvas);
     updatePerspective(worldObjects, world);
     sortEntities(worldObjects);
     drawEntities(ctx, worldObjects, camera, canvas);
     drawWorld(ctx, world, camera, getGravityEnabled());
-
 }
 
-function gameLoop(){
-
+function gameLoop() {
     update();
     render();
-
     requestAnimationFrame(gameLoop);
-
 }
 
 gameLoop();
