@@ -2,83 +2,69 @@ let gravityEnabled = false;
 const keys = {};
 let jumpPressed = false;
 
-function handleInput(player, physics, gravityEnabled){
-
-    if(gravityEnabled){
-
-        if(keys["a"] || keys["arrowleft"])
+function handleInput(player, physics, gravityEnabled) {
+    if (gravityEnabled) {
+        if (
+            inputConfig.keys.moveLeft.some(key => keys[key])
+        )
             player.vx -= player.acceleration;
 
-        if(keys["d"] || keys["arrowright"])
+        if (
+            inputConfig.keys.moveRight.some(key => keys[key])
+        )
             player.vx += player.acceleration;
 
-        const jumpNow =
-            (keys[" "] || keys["space"]);
+        const jumpNow = inputConfig.keys.jump.some(key => keys[key]);
 
-        if(jumpNow && !jumpPressed){
-
-            if(
+        if (jumpNow && !jumpPressed) {
+            if (
                 player.jumpCount < player.maxJumps ||
                 player.coyoteTimer > 0
-            ){
-
+            ) {
                 player.vy = -physics.jumpPower;
                 player.jumpCount++;
-
-            }
-
-            else if(player.onLeftWall){
-
+            } else if (player.onLeftWall) {
                 player.vx = physics.wallPushPower;
                 player.vy = -physics.wallJumpPower;
-
                 player.jumpCount = 1;
-
-            }
-
-            else if(player.onRightWall){
-
+            } else if (player.onRightWall) {
                 player.vx = -physics.wallPushPower;
                 player.vy = -physics.wallJumpPower;
-
                 player.jumpCount = 1;
-                }
-
-            else if(player.onCeiling){
-
+            } else if (player.onCeiling) {
                 player.vy = physics.jumpPower;
-
             }
-
         }
 
         jumpPressed = jumpNow;
-
-    }else{
-
-        if(keys["w"] || keys["arrowup"])
+    } else {
+        if (
+            inputConfig.keys.moveUp.some(key => keys[key])
+        )
             player.vy -= player.acceleration;
 
-        if(keys["s"] || keys["arrowdown"])
+        if (
+            inputConfig.keys.moveDown.some(key => keys[key])
+        )
             player.vy += player.acceleration;
 
-        if(keys["a"] || keys["arrowleft"])
+        if (
+            inputConfig.keys.moveLeft.some(key => keys[key])
+        )
             player.vx -= player.acceleration;
 
-        if(keys["d"] || keys["arrowright"])
+        if (
+            inputConfig.keys.moveRight.some(key => keys[key])
+        )
             player.vx += player.acceleration;
-
     }
-
 }
 
 function setupInputListeners(player) {
     window.addEventListener("keydown", e => {
-
         keys[e.key.toLowerCase()] = true;
 
-        if(e.key.toLowerCase() === "g"){
-
+        if (e.key.toLowerCase() === inputConfig.keys.toggleGravity) {
             gravityEnabled = !gravityEnabled;
 
             // Reset movement when switching modes
@@ -93,10 +79,9 @@ function setupInputListeners(player) {
             player.jumpCount = 0;
             player.coyoteTimer = 0;
         }
-
     });
 
-    window.addEventListener("keyup", e=>{
+    window.addEventListener("keyup", e => {
         keys[e.key.toLowerCase()] = false;
     });
 }
