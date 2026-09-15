@@ -1,0 +1,31 @@
+{
+  "entities": [
+    {
+      "id": "tree",
+      "x": 800,
+      "y": 1390,
+      "radius": 70,
+      "color": "forestgreen",
+      "sprite": "sprites/tree1.png"
+    },
+    {
+      "id": "coin",
+      "x": 1200,
+      "y": 1400,
+      "radius": 10,
+      "color": "gold",
+      "sprite": "sprites/coin1.png"
+    },
+    {
+      "id": "enemy",
+      "x": 500,
+      "y": 600,
+      "radius": 30,
+      "color": "red",
+      "sprite": "sprites/enemy1.png",
+      "acceleration": 0.5,
+      "friction": 0.85,
+      "maxSpeed": 5
+    }
+  ]
+}
