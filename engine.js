@@ -74,7 +74,7 @@ function update() {
 
 function render() {
     clearScreen(ctx, canvas);
-    updatePerspective(worldObjects, world);
+    updatePerspective(worldObjects, world);  // This already uses getGravityEnabled() internally now
     sortEntities(worldObjects);
     drawEntities(ctx, worldObjects, camera, canvas);
     drawWorld(ctx, world, camera, getGravityEnabled());
