@@ -4,10 +4,16 @@ function clearScreen(ctx, canvas) {
 
 function updatePerspective(worldObjects, world) {
     for (const object of worldObjects) {
-        object.scale =
-            renderConfig.perspectiveMinScale +
-            (object.y / world.height) *
-            (renderConfig.perspectiveMaxScale - renderConfig.perspectiveMinScale);
+        if (getGravityEnabled()) {
+            // Apply perspective scaling based on height
+            object.scale =
+                renderConfig.perspectiveMinScale +
+                (object.y / world.height) *
+                (renderConfig.perspectiveMaxScale - renderConfig.perspectiveMinScale);
+        } else {
+            // No perspective scaling in free-flight mode
+            object.scale = 1;
+        }
     }
 }
 
