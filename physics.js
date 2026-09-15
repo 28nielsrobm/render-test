@@ -74,13 +74,14 @@ function resolveCollisions(player, world, gravityEnabled) {
         player.onCeiling = true;
     }
 
-    if (gravityEnabled) {
-        const bottom = player.radius * player.scale;
-
-        if (player.y > world.floor - bottom) {
-            player.y = world.floor - bottom;
-            player.vy = 0;
-            player.onGround = true;
+    // Floor collision - applies in BOTH gravity modes
+    const bottom = player.radius * player.scale;
+    if (player.y > world.floor - bottom) {
+        player.y = world.floor - bottom;
+        player.vy = 0;
+        player.onGround = true;
+        
+        if (gravityEnabled) {
             player.jumpCount = 0;
         }
     }
