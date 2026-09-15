@@ -6,8 +6,7 @@ camera.width = canvas.width;
 camera.height = canvas.height;
 
 // Factory function to create entities from config
-function createEntityFromConfig(configKey) {
-    const config = entityConfig[configKey];
+function createEntityFromConfig(config) {
     const entity = new Entity(
         config.x,
         config.y,
@@ -29,15 +28,35 @@ function createEntityFromConfig(configKey) {
     return entity;
 }
 
-const player = createEntityFromConfig("player");
-const tree = createEntityFromConfig("tree");
-const coin = createEntityFromConfig("coin");
+const player = new Entity(
+    entityConfig.player.x,
+    entityConfig.player.y,
+    entityConfig.player.radius,
+    entityConfig.player.color,
+    entityConfig.player.acceleration,
+    entityConfig.player.friction,
+    entityConfig.player.maxSpeed
+);
+player.setSprite(entityConfig.player.sprite);
+player.maxJumps = entityConfig.player.maxJumps;
 
 const worldObjects = [];
 
-function initializeWorld() {
-    worldObjects.push(tree);
-    worldObjects.push(coin);
+async function initializeWorld() {
+    // Load entities from JSON
+    try {
+        const response = await fetch('entities.json');
+        const data = await response.json();
+        
+        for (const entityData of data.entities) {
+            const entity = createEntityFromConfig(entityData);
+            worldObjects.push(entity);
+        }
+    } catch (error) {
+        console.error("Failed to load entities from JSON:", error);
+    }
+    
+    // Always add player last so it renders on top
     worldObjects.push(player);
 }
 
@@ -67,4 +86,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-gameLoop();
+// Start game loop after entities are loaded
+initializeWorld().then(() => {
+    gameLoop();
+});
